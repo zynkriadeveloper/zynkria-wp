@@ -1,0 +1,8 @@
+*.log
+*.sql
+*.sql.gz
+*.tar.gz
+*.zip
+.env
+site.conf
+__pycache__/

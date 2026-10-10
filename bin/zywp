@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+ZYWP_HOME=/opt/zywp
+# shellcheck source=lib/common.sh
+source "$ZYWP_HOME/lib/common.sh"
+usage() {
+    cat <<EOF
+ZYNKRIA ZYWP v${VERSION}
+Usage: sudo zywp <command>
+  admin pass [password]           Change the configured administrator password
+  admin new <user> [password]     Create an administrator (prompts for email)
+  restart server                 Restart Nginx, PHP-FPM and MariaDB services
+  changer php.ini                Open the effective Zynkria PHP overrides in nano
+  logs [nginx|php|server|cron]     Show the last 100 log lines (default: nginx)
+  doctor                         Check configuration, services and WordPress
+  backup                         Back up managed files, database and TLS config
+  reinstall                      Open the installation/reinstallation menu
+  version                        Show the version
+  help                           Show this help
+Passwords can be entered interactively to keep them out of shell history.
+Donation: https://paypal.me/zynkria
+EOF
+}
+main() {
+    case ${1:-help} in
+        help|--help|-h) usage; return ;;
+        version|--version) printf '%s\n' "$VERSION"; return ;;
+    esac
+    root_required
+    if [[ ${1:-} == reinstall ]]; then exec /opt/zywp/install.sh; fi
+    lock_runtime
+    load_state
+    case ${1:-} in
+        doctor) diagnose ;;
+        backup) backup_site ;;
+        admin)
+            case ${2:-} in
+                pass)
+                    [[ $# -le 3 ]] || die 'Usage: zywp admin pass [password]'
+                    if [[ $# == 3 ]]; then PASSWORD=$3; else read_password; fi
+                    validate_password
+                    local role
+                    role=$(wp_cmd user get "$ADMIN_USER" --field=roles)
+                    [[ $role =~ (^|[[:space:],])administrator($|[[:space:],]) ]] || die 'Configured user is not an administrator.'
+                    printf '%s\n' "$PASSWORD" | wp_cmd user update "$ADMIN_USER" --prompt=user_pass
+                    unset PASSWORD
+                    ;;
+                new)
+                    [[ $# -ge 3 && $# -le 4 ]] || die 'Usage: zywp admin new <user> [password]'
+                    [[ $3 =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{2,59}$ ]] || die 'Invalid username.'
+                    local email
+                    read -r -p 'New administrator email: ' email </dev/tty
+                    [[ $email =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] || die 'Invalid email.'
+                    if [[ $# == 4 ]]; then PASSWORD=$4; else read_password; fi
+                    validate_password
+                    printf '%s\n' "$PASSWORD" | wp_cmd user create "$3" "$email" --role=administrator --prompt=user_pass
+                    unset PASSWORD
+                    ;;
+                *) die 'Usage: zywp admin pass [password] | admin new <user> [password]' ;;
+            esac ;;
+        restart)
+            [[ ${2:-} == server && $# == 2 ]] || die 'Usage: zywp restart server'
+            nginx -t
+            "/usr/sbin/php-fpm${PHP_VERSION}" -t
+            systemctl restart mariadb "php${PHP_VERSION}-fpm" nginx
+            say 'Nginx, PHP-FPM and MariaDB restarted.' ;;
+        changer)
+            [[ ${2:-} == php.ini && $# == 2 ]] || die 'Usage: zywp changer php.ini'
+            local file copy
+            file="/etc/php/$PHP_VERSION/fpm/conf.d/99-zywp.ini"
+            copy=$(mktemp)
+            cp "$file" "$copy"
+            nano "$file"
+            if "/usr/sbin/php-fpm${PHP_VERSION}" -t; then
+                if confirm 'Apply PHP changes now?'; then systemctl reload "php${PHP_VERSION}-fpm"; fi
+            else
+                cp "$copy" "$file"
+                say 'Invalid PHP configuration. Previous overrides restored.'
+            fi
+            rm -f "$copy" ;;
+        logs)
+            case ${2:-nginx} in
+                nginx) tail -n 100 /var/log/nginx/zywp-error.log ;;
+                php) tail -n 100 /var/log/zywp/php-error.log ;;
+                cron) tail -n 100 /var/log/zywp/cron.log ;;
+                server) journalctl -u nginx -u "php${PHP_VERSION}-fpm" -u mariadb -n 100 --no-pager ;;
+                *) die 'Choose nginx, php, server, or cron.' ;;
+            esac ;;
+        *) usage; exit 1 ;;
+    esac
+}
+main "$@"
