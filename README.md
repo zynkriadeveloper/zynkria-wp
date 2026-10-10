@@ -144,6 +144,8 @@ On Linux with Bash, Python 3 and ShellCheck:
 bash tests/run.sh
 # With Nginx and PHP-FPM installed:
 sudo bash tests/run.sh --config
+# Optional online verification of WP-CLI download/signature endpoints:
+python3 tests/verify-download.py
 ```
 
 GitHub Actions runs syntax/lint checks, real terminal prompt validation and native Nginx/PHP-FPM template validation on Ubuntu 24.04. These checks do not perform a complete WordPress installation or obtain a real certificate.

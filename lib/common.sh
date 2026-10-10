@@ -47,7 +47,7 @@ wp_cmd() {
 diagnose() {
     local issues=0 service
     say 'Checking installed packages, services and configuration'
-    for service in nginx mariadb php-fpm; do
+    for service in nginx mariadb-server "php${PHP_VERSION}-fpm"; do
         if dpkg-query -W -f='${Status}\n' "$service" 2>/dev/null | grep -q 'install ok installed'; then
             printf '  %-12s installed\n' "$service"
         else
