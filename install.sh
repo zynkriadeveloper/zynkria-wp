@@ -105,7 +105,7 @@ install_runtime() {
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$base/wp-cli.pgp" -o "$temp/wp-cli.pgp"
     mkdir -m 700 "$temp/gnupg"
     gpg --homedir "$temp/gnupg" --batch --import "$temp/wp-cli.pgp"
-    gpg --homedir "$temp/gnupg" --batch --verify "$temp/wp-cli.phar.asc" "$temp/wp-cli.phar"
+    verify_wpcli "$temp"
     install -m 644 "$temp/wp-cli.phar" /opt/zywp/wp-cli.phar
     rm -rf -- "$temp"
 }

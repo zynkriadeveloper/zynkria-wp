@@ -99,7 +99,7 @@ install.sh                          Interactive installer
 - HTTP security headers, hidden PHP/Nginx version banners, WordPress file editor disabled, and no public PHP error output.
 - WordPress cron runs every five minutes using system cron. Log rotation keeps eight weekly archives.
 - HTTPS with automatic certificate renewal through `certbot.timer`. Confirm renewal with `sudo certbot renew --dry-run` once DNS and ports are ready.
-- Official WordPress downloads with core checksum verification. WP-CLI downloads and its signature are verified using the key fetched from the official WP-CLI build repository over HTTPS. This does not provide an independently pinned signing-key trust anchor.
+- Official WordPress downloads with core checksum verification. WP-CLI downloads and its signature are verified against the official release key fingerprint pinned in the runtime, as published in the WP-CLI handbook. A different signing key causes installation to stop.
 
 Installed files:
 
@@ -158,6 +158,7 @@ Configuration decisions are based on these official sources:
 - [WordPress on Nginx](https://developer.wordpress.org/advanced-administration/server/web-server/nginx/)
 - [Hardening WordPress](https://developer.wordpress.org/advanced-administration/security/hardening/)
 - [WP-CLI installation and download verification](https://make.wordpress.org/cli/handbook/guides/installing/)
+- [WP-CLI published signing key fingerprint](https://make.wordpress.org/cli/handbook/guides/verifying-downloads/)
 - [Nginx FastCGI module](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html)
 - [Nginx gzip module and compression side-channel notice](https://nginx.org/en/docs/http/ngx_http_gzip_module.html)
 - [PHP supported versions](https://www.php.net/supported-versions.php)

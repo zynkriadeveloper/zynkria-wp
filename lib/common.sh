@@ -2,6 +2,8 @@
 # Shared Zynkria runtime, installed root-owned under /opt/zywp.
 VERSION=$(cat "${ZYWP_HOME}/VERSION")
 export VERSION
+# Published in the official WP-CLI download verification handbook.
+WPCLI_FINGERPRINT=63AF7AA15067C05616FDDD88A3A2E8F226F0BC06
 STATE=/etc/zywp/site.conf
 WEBROOT=/var/www/zywp/public
 SITE_USER=zywp
@@ -116,4 +118,12 @@ read_password() {
 }
 validate_password() {
     [[ ${#PASSWORD} -ge 12 && $PASSWORD != *$'\n'* && $PASSWORD != *$'\r'* ]] || die 'Use at least 12 characters without line breaks.'
+}
+verify_wpcli() {
+    local directory=$1
+    gpg --homedir "$directory/gnupg" --batch --status-fd 1 --verify \
+        "$directory/wp-cli.phar.asc" "$directory/wp-cli.phar" >"$directory/signature-status"
+    awk -v expected="$WPCLI_FINGERPRINT" \
+        '$2 == "VALIDSIG" && ($3 == expected || $NF == expected) { valid=1 } END { exit !valid }' \
+        "$directory/signature-status" || die 'WP-CLI was not signed by the pinned official release key.'
 }
