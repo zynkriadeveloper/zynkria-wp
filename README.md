@@ -4,7 +4,7 @@
 
 An interactive installer and management command for a single WordPress website on a dedicated Linux VPS. Zynkria installs Nginx, PHP-FPM, MariaDB, WordPress and their required packages, then creates the website from your answers.
 
-[Support development with PayPal](https://paypal.me/zynkria)
+[Donate](https://paypal.me/zynkria)
 
 ## Requirements
 
@@ -79,6 +79,24 @@ The installed command is `zywp`. System management requires sudo.
 `changer php.ini` opens `/etc/php/<version>/fpm/conf.d/99-zywp.ini`, which overrides the base `php.ini`. PHP-FPM configuration is checked after editing and invalid overrides are restored. Not every semantically incorrect PHP value is detected by the PHP parser; inspect the effective values and test your application after editing.
 
 ## Configuration and optimizations
+
+### Current Nginx coverage
+
+| Feature | Version 0.1.0 |
+| --- | --- |
+| HTTPS | Configured by Certbot when an HTTPS URL is selected |
+| HTTP/2 | Not explicitly enabled by ZYWP |
+| HTTP/3 / QUIC | Not configured |
+| Gzip | Static text assets, level 5; disabled for PHP responses |
+| Static asset cache | Seven-day expiry |
+| Request body limit | 64 MB |
+| PHP upstream read timeout | 60 seconds |
+| Access and error logs | Dedicated Nginx logs |
+| Security rules | Sensitive files blocked, PHP blocked in uploads, security headers, XML-RPC blocked |
+| Request/connection rate limits | No ZYWP-specific rate limiting configured |
+| WAF / DDoS protection | Not provided by ZYWP |
+
+HTTP/3 needs Nginx 1.25.0 or newer built with `--with-http_v3_module`, a compatible TLS library, TLS 1.3, a valid certificate, a QUIC listener, an `Alt-Svc` advertisement and network/firewall access to UDP port 443. Installing the distribution's Nginx package alone does not enable it. Verify the installed build with `nginx -V` before adding HTTP/3 directives. See the [official Nginx QUIC guide](https://nginx.org/en/docs/quic.html). ZYWP currently uses distribution defaults for worker connections, client timeouts and TLS options supplied by Certbot rather than a complete custom tuning profile.
 
 ```text
 nginx/templates/wordpress.conf       Single-site virtual host template
@@ -165,10 +183,10 @@ Configuration decisions are based on these official sources:
 - [MariaDB secure installation and Unix socket authentication](https://mariadb.com/docs/server/clients-and-utilities/deployment-tools/mariadb-secure-installation)
 - [Certbot](https://certbot.eff.org/)
 
-## Support development
+## Donate
 
-ZYWP is a Zynkria project. Donations help support its development:
+ZYWP is a Zynkria project.
 
-**[Donate via PayPal — paypal.me/zynkria](https://paypal.me/zynkria)**
+**[Donate](https://paypal.me/zynkria)**
 
 Licensed under the MIT license. Provided without warranty; review and test it for your server.
